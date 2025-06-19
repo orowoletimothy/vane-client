@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { useAllHabits, useCreateHabit, useUpdateHabit, useDeleteHabit, useSetHabitStatus } from "@/hooks/useHabits"
 
 export type HabitStatus = "complete" | "incomplete" | "paused"
 
@@ -56,16 +57,48 @@ const defaultCategories: HabitCategory[] = [
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-export const useHabitStore = create<HabitState>()(() => ({
+export const useHabitStore = create<HabitState>()((set, get) => ({
   habits: [],
   categories: defaultCategories,
   todayProgress: 0,
   restorePoints: 3,
-  addHabit: () => { },
-  updateHabit: () => { },
-  deleteHabit: () => { },
-  completeHabit: () => { },
-  pauseHabit: () => { },
-  getTodayHabits: () => [],
-  getHabitsByCategory: () => [],
+  addHabit: (habit) => {
+    // This will be handled by React Query mutations
+    console.log('Adding habit:', habit);
+  },
+  updateHabit: (id, updates) => {
+    // This will be handled by React Query mutations
+    console.log('Updating habit:', id, updates);
+  },
+  deleteHabit: (id) => {
+    // This will be handled by React Query mutations
+    console.log('Deleting habit:', id);
+  },
+  completeHabit: (id) => {
+    // This will be handled by React Query mutations
+    console.log('Completing habit:', id);
+  },
+  pauseHabit: (id) => {
+    // This will be handled by React Query mutations
+    console.log('Pausing habit:', id);
+  },
+  getTodayHabits: () => {
+    const { habits } = get();
+    const today = new Date();
+    const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][today.getDay()];
+    
+    return habits.filter(habit => 
+      habit.habit_days.length === 0 || habit.habit_days.includes(dayName)
+    );
+  },
+  getHabitsByCategory: (category) => {
+    const { habits } = get();
+    // For now, return all habits since we don't have categories in the backend
+    return habits;
+  },
 }))
+
+// Helper function to update the store with habits from API
+export const updateHabitsInStore = (habits: Habit[]) => {
+  useHabitStore.setState({ habits });
+};

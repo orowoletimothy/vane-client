@@ -11,7 +11,7 @@ export function useHabits(userId: string) {
             return data.map((habit: any) => {
                 // Calculate completedToday based on status and target_count
                 const completedToday = habit.status === "complete" ? habit.target_count : 0;
-                
+
                 return {
                     id: habit._id,
                     user_id: habit.userId,
@@ -35,29 +35,66 @@ export function useHabits(userId: string) {
     });
 }
 
-// Fetch all habits for a user
+// Fetch ALL habits for a user (for insights page)
 export function useAllHabits(userId: string) {
+    console.log("useAllHabits called with userId:", userId);
     return useQuery({
         queryKey: ["allHabits", userId],
         queryFn: async () => {
+            console.log("Making API call to:", `/users/habits/${userId}/all`);
             const { data } = await api.get(`/users/habits/${userId}/all`);
-            return data.map((habit: any) => ({
-                id: habit._id,
-                user_id: habit.userId,
-                title: habit.title,
-                reminder_time: habit.reminderTime,
-                status: habit.status,
-                is_public: habit.is_public,
-                target_count: habit.target_count,
-                created_at: habit.createdAt,
-                updated_at: habit.updatedAt,
-                streak: habit.habitStreak,
-                habit_days: habit.repeatDays,
-                last_completed: habit.lastCompleted,
-                notes: habit.notes,
-                icon: habit.icon,
-                completedToday: habit.status === "complete" ? habit.target_count : 0
-            }));
+            console.log("API response:", data);
+
+            // Transform backend data to match frontend expected structure
+            return data.map((habit: any) => {
+                const completedToday = habit.status === "complete" ? habit.target_count : 0;
+
+                return {
+                    id: habit._id,
+                    user_id: habit.userId,
+                    title: habit.title,
+                    reminder_time: habit.reminderTime,
+                    status: habit.status,
+                    is_public: habit.is_public,
+                    target_count: habit.target_count,
+                    created_at: habit.createdAt,
+                    updated_at: habit.updatedAt,
+                    streak: habit.habitStreak,
+                    habit_days: habit.repeatDays,
+                    last_completed: habit.lastCompleted,
+                    notes: habit.notes,
+                    icon: habit.icon,
+                    completedToday: completedToday
+                };
+            });
+        },
+        enabled: !!userId,
+    });
+}
+
+// Fetch habit completion history for insights
+export function useHabitCompletionHistory(userId: string, habitId: string, days: number = 180) {
+    return useQuery({
+        queryKey: ["habitHistory", userId, habitId, days],
+        queryFn: async () => {
+            console.log("Making API call to:", `/users/habits/${userId}/${habitId}/history?days=${days}`);
+            const { data } = await api.get(`/users/habits/${userId}/${habitId}/history?days=${days}`);
+            console.log("Habit history API response:", data);
+            return data; // Return the full response object
+        },
+        enabled: !!userId && !!habitId,
+    });
+}
+
+// Fetch user performance analytics (time of day and day of week trends)
+export function useUserPerformanceAnalytics(userId: string, days: number = 90) {
+    return useQuery({
+        queryKey: ["userAnalytics", userId, days],
+        queryFn: async () => {
+            console.log("Making API call to:", `/users/habits/${userId}/analytics?days=${days}`);
+            const { data } = await api.get(`/users/habits/${userId}/analytics?days=${days}`);
+            console.log("User analytics API response:", data);
+            return data;
         },
         enabled: !!userId,
     });
@@ -93,7 +130,7 @@ export function useUpdateHabit(userId: string) {
         mutationFn: async ({ habitId, updates }: { habitId: string; updates: any }) => {
             // Remove status if present in updates
             const { status, habit_days, reminder_time, ...rest } = updates;
-            
+
             // Map client-side field names to server-side field names
             const { data } = await api.put(`/users/habits/${userId}/${habitId}`, {
                 ...rest,

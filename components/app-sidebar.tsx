@@ -1,8 +1,17 @@
-"use client"
+"use client";
 
-import type * as React from "react"
-import { BarChart3, Home, Settings, User, Target, TrendingUp, Users, LogOut } from "lucide-react"
-import { useRouter, usePathname } from "next/navigation"
+import type * as React from "react";
+import {
+  BarChart3,
+  Home,
+  Settings,
+  User,
+  Target,
+  TrendingUp,
+  Users,
+  LogOut,
+} from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
 
 import {
   Sidebar,
@@ -15,10 +24,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/components/ui/sidebar"
-import { useAuthStore } from "@/store/auth-store"
-import { NotificationBell } from "@/components/notification-bell"
-import api from "@/lib/api"
+} from "@/components/ui/sidebar";
+import { useAuthStore } from "@/store/auth-store";
+import { NotificationBell } from "@/components/notification-bell";
+import api from "@/lib/api";
 
 const navigationItems = [
   {
@@ -46,7 +55,7 @@ const navigationItems = [
     url: "/profile",
     icon: User,
   },
-]
+];
 
 const accountItems = [
   {
@@ -54,23 +63,23 @@ const accountItems = [
     url: "/settings",
     icon: Settings,
   },
-]
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const { user, logout } = useAuthStore()
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, logout } = useAuthStore();
 
   const handleLogout = async () => {
     try {
-      await logout()
-      router.push("/login")
+      await logout();
+      router.push("/login");
     } catch (error) {
-      console.error("Logout failed:", error)
+      console.error("Logout failed:", error);
       // Even if the server request fails, redirect to login
-      router.push("/login")
+      router.push("/login");
     }
-  }
+  };
 
   return (
     <Sidebar {...props}>
@@ -97,7 +106,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <button className="w-full" onClick={() => router.push(item.url)}>
+                    <button
+                      className="w-full"
+                      onClick={() => router.push(item.url)}
+                    >
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
                     </button>
@@ -114,7 +126,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenu>
               {accountItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url} onClick={() => router.push(item.url)}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.url}
+                    onClick={() => router.push(item.url)}
+                  >
                     <button className="w-full">
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
@@ -124,7 +140,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               ))}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <button className="w-full text-red-500 hover:text-red-600" onClick={handleLogout}>
+                  <button
+                    className="w-full text-red-500 hover:text-red-600"
+                    onClick={handleLogout}
+                  >
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>
                   </button>
@@ -141,13 +160,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div className="flex items-center space-x-2 mb-2">
                   <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
                     <span className="text-xs text-white font-semibold">
-                      {(user.displayName || user.username)?.charAt(0).toUpperCase() || "U"}
+                      {(user.displayName || user.username)
+                        ?.charAt(0)
+                        .toUpperCase() || "U"}
                     </span>
                   </div>
-                  <span className="text-sm font-medium">{user.displayName || user.username}</span>
+                  <span className="text-sm font-medium">
+                    {user.displayName || user.username}
+                  </span>
                 </div>
                 <div className="text-xs text-gray-600">
-                  <p>Current Streak: {user.current_streak} days</p>
+                  <p>Current Streak: {user.genStreakCount} days</p>
                   <p>Recovery Points: {user.recovery_points}</p>
                 </div>
               </div>
@@ -157,5 +180,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

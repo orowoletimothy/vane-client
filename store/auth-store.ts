@@ -18,6 +18,8 @@ interface User {
   longest_streak: number
   recovery_points: number
   is_vacation: boolean
+  totalStreakDays?: number
+  totalHabits?: number
 }
 
 interface AuthState {
@@ -25,8 +27,8 @@ interface AuthState {
   isAuthenticated: boolean
   setUser: (user: User | null) => void
   logout: () => Promise<void>
-  updateProfile: (updates: Partial<Pick<User, "displayName" | "profilePicture" | "is_vacation">>) => void
-  toggleVacationMode: () => void
+  updateProfile: (updates: Partial<Pick<User, "displayName" | "profilePicture">>) => Promise<void>
+  toggleVacationMode: () => Promise<void>
   getDisplayName: () => string
 }
 
@@ -53,14 +55,44 @@ export const useAuthStore = create<AuthState>()(
           set({ user: null, isAuthenticated: false })
         }
       },
-      updateProfile: (updates) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, ...updates } : null,
-        })),
-      toggleVacationMode: () =>
-        set((state) => ({
-          user: state.user ? { ...state.user, is_vacation: !state.user.is_vacation } : null,
-        })),
+      updateProfile: async (updates) => {
+        try {
+          const response = await api.patch("/auth/profile", updates, {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            withCredentials: true
+          })
+          
+          if (response.data.user) {
+            set((state) => ({
+              user: state.user ? { ...state.user, ...response.data.user } : null,
+            }))
+          }
+        } catch (error) {
+          console.error("Failed to update profile:", error)
+          throw error
+        }
+      },
+      toggleVacationMode: async () => {
+        try {
+          const response = await api.post("/auth/vacation-mode", {}, {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            withCredentials: true
+          })
+          
+          if (response.data.user) {
+            set((state) => ({
+              user: state.user ? { ...state.user, ...response.data.user } : null,
+            }))
+          }
+        } catch (error) {
+          console.error("Failed to toggle vacation mode:", error)
+          throw error
+        }
+      },
       getDisplayName: () => {
         const state = get()
         return state.user?.displayName || "User"

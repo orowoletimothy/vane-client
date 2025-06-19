@@ -376,7 +376,7 @@ function HabitConsistencySection({
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6 grid grid-cols-3 gap-4">
+        <div className="space-y-6 grid lg:grid-cols-3 md:grid-cols-1 sm:grid-cols-1 gap-4">
           {habits.map((habit) => (
             <HabitCalendarWithData
               key={habit.id}

@@ -132,7 +132,7 @@ export default function DashboardPage() {
                   <span>Streak: {user.genStreakCount || 0}</span>
                 </div>
               )}
-              <NotificationBell />
+              {/* <NotificationBell /> */}
               <Button
                 onClick={() => setShowAddHabit(true)}
                 size="sm"
@@ -163,7 +163,7 @@ export default function DashboardPage() {
               <h1 className="text-xl font-semibold">Today</h1>
             </div>
             <div className="flex items-center space-x-2">
-              <NotificationBell />
+              {/* <NotificationBell /> */}
               {user && (
                 <div className="flex items-center bg-amber-100 text-amber-700 rounded-full px-3 py-1 text-xs font-semibold mr-2">
                   <span className="mr-1">🔥</span>
@@ -199,7 +199,7 @@ export default function DashboardPage() {
             <h1 className="text-xl font-semibold">Today</h1>
           </div>
           <div className="flex items-center space-x-2">
-            <NotificationBell />
+            {/* <NotificationBell /> */}
             {user && (
               <div className="flex items-center bg-amber-100 text-amber-700 rounded-full px-3 py-1 text-xs font-semibold mr-2">
                 <span className="mr-1">🔥</span>

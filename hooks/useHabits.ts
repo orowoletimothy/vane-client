@@ -166,8 +166,21 @@ export function useSetHabitStatus(userId: string) {
             const { data } = await api.put(`/users/habits/${userId}/${habitId}/status`, { status });
             return data;
         },
-        onSuccess: () => {
+        onSuccess: async () => {
+            // Invalidate habit queries
             queryClient.invalidateQueries({ queryKey: ["habits", userId] });
+            
+            // Refresh user data to update general streak count
+            try {
+                const userResponse = await api.get("/auth/me");
+                if (userResponse.data.user) {
+                    // Import useAuthStore dynamically to avoid circular imports
+                    const { useAuthStore } = await import("@/store/auth-store");
+                    useAuthStore.getState().setUser(userResponse.data.user);
+                }
+            } catch (error) {
+                console.error("Failed to refresh user data:", error);
+            }
         },
     });
 }

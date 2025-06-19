@@ -77,7 +77,7 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
 
   deleteNotification: async (notificationId: string) => {
     try {
-      await api.delete(`/notification/${notificationId}`)
+      await api.delete(`/notifications/${notificationId}`)
       set((state) => {
         const notification = state.notifications.find(n => n._id === notificationId)
         const unreadCount = notification && !notification.isRead

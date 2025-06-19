@@ -100,6 +100,22 @@ export function useUserPerformanceAnalytics(userId: string, days: number = 90) {
     });
 }
 
+// Check habit feasibility
+export function useCheckHabitFeasibility(userId: string) {
+    return useMutation({
+        mutationFn: async (habit: any) => {
+            const { data } = await api.post(`/users/habits/${userId}/feasibility-check`, {
+                title: habit.title,
+                target_count: habit.target_count,
+                repeatDays: habit.habit_days,
+                reminderTime: habit.reminderTime,
+                notes: habit.notes,
+            });
+            return data;
+        },
+    });
+}
+
 // Create a habit
 export function useCreateHabit(userId: string) {
     const queryClient = useQueryClient();
@@ -113,6 +129,7 @@ export function useCreateHabit(userId: string) {
                 is_public: habit.isPublic,
                 reminderTime: habit.reminderTime,
                 notes: habit.notes,
+                skipFeasibilityCheck: habit.skipFeasibilityCheck,
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
             });
             return data;

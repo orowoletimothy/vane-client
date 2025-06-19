@@ -306,7 +306,7 @@ export default function ProfilePage() {
                 <Label>Member Since</Label>
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <Calendar className="w-4 h-4" />
-                  <span>{new Date(user.date_joined).toLocaleDateString()}</span>
+                  <span>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown"}</span>
                 </div>
               </div>
             </CardContent>
@@ -408,9 +408,9 @@ export default function ProfilePage() {
                 <div className="text-2xl font-bold text-gray-900">
                   {user?.date_joined
                     ? Math.floor(
-                        (Date.now() - new Date(user.date_joined).getTime()) /
-                          (1000 * 60 * 60 * 24)
-                      )
+                      (Date.now() - new Date(user.date_joined).getTime()) /
+                      (1000 * 60 * 60 * 24)
+                    )
                     : 0}
                 </div>
                 <div className="text-sm text-gray-600">Days Since Joining</div>

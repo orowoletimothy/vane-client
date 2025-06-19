@@ -11,7 +11,7 @@ export function useHabits(userId: string) {
             return data.map((habit: any) => {
                 // Calculate completedToday based on status and target_count
                 const completedToday = habit.status === "complete" ? habit.target_count : 0;
-                
+
                 return {
                     id: habit._id,
                     user_id: habit.userId,
@@ -44,11 +44,11 @@ export function useAllHabits(userId: string) {
             console.log("Making API call to:", `/users/habits/${userId}/all`);
             const { data } = await api.get(`/users/habits/${userId}/all`);
             console.log("API response:", data);
-            
+
             // Transform backend data to match frontend expected structure
             return data.map((habit: any) => {
                 const completedToday = habit.status === "complete" ? habit.target_count : 0;
-                
+
                 return {
                     id: habit._id,
                     user_id: habit.userId,
@@ -130,7 +130,7 @@ export function useUpdateHabit(userId: string) {
         mutationFn: async ({ habitId, updates }: { habitId: string; updates: any }) => {
             // Remove status if present in updates
             const { status, habit_days, reminder_time, ...rest } = updates;
-            
+
             // Map client-side field names to server-side field names
             const { data } = await api.put(`/users/habits/${userId}/${habitId}`, {
                 ...rest,

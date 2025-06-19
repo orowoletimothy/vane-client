@@ -14,7 +14,7 @@ interface User {
   friendRequests: string[]
   genStreakCount: number
   userTimeZone?: string
-  date_joined: string
+  createdAt: string
   longest_streak: number
   recovery_points: number
   is_vacation: boolean
@@ -63,7 +63,7 @@ export const useAuthStore = create<AuthState>()(
             },
             withCredentials: true
           })
-          
+
           if (response.data.user) {
             set((state) => ({
               user: state.user ? { ...state.user, ...response.data.user } : null,
@@ -82,7 +82,7 @@ export const useAuthStore = create<AuthState>()(
             },
             withCredentials: true
           })
-          
+
           if (response.data.user) {
             set((state) => ({
               user: state.user ? { ...state.user, ...response.data.user } : null,

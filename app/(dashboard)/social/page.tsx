@@ -103,33 +103,33 @@ export default function SocialPage() {
     } catch (error) {
       console.error("Failed to fetch friend requests:", error);
     }
+  };
 
-    const fetchOutgoingRequests = async () => {
-      try {
-        const response = await api.get(
-          `/social/user/${user?._id}/outgoing-friend-requests`
-        );
-        setOutgoingRequests(response.data);
-      } catch (error) {
-        console.error("Failed to fetch outgoing friend requests:", error);
-      }
-    };
+  const fetchOutgoingRequests = async () => {
+    try {
+      const response = await api.get(
+        `/social/user/${user?._id}/outgoing-friend-requests`
+      );
+      setOutgoingRequests(response.data);
+    } catch (error) {
+      console.error("Failed to fetch outgoing friend requests:", error);
+    }
+  };
 
-    const handleSearch = async () => {
-      if (!searchQuery.trim()) return;
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
 
-      setIsSearching(true);
-      try {
-        const response = await api.get(`/social/search?query=${searchQuery}`);
-        // Filter out the current user from results
-        const filtered = response.data.filter((u: any) => u._id !== user?._id);
-        setSearchResults(filtered);
-      } catch (error) {
-        console.error("Search failed:", error);
-      } finally {
-        setIsSearching(false);
-      }
-    };
+    setIsSearching(true);
+    try {
+      const response = await api.get(`/social/search?query=${searchQuery}`);
+      // Filter out the current user from results
+      const filtered = response.data.filter((u: any) => u._id !== user?._id);
+      setSearchResults(filtered);
+    } catch (error) {
+      console.error("Search failed:", error);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleUserWidgetClick = (user: any) => {
@@ -158,43 +158,43 @@ export default function SocialPage() {
       setFriendRequestLoading(false);
     }
   };
-}
 
-const acceptFriendRequest = async (requestId: string) => {
-  try {
-    await api.post(`/social/user/${user?._id}/accept-friend`, {
-      friendId: requestId,
-    });
-    // Update friend requests and friends lists
-    fetchFriendRequests();
-    fetchFriends();
-  } catch (error) {
-    console.error("Failed to accept friend request:", error);
-  }
-};
+  const acceptFriendRequest = async (requestId: string) => {
+    try {
+      await api.post(`/social/user/${user?._id}/accept-friend`, {
+        friendId: requestId,
+      });
+      // Update friend requests and friends lists
+      fetchFriendRequests();
+      fetchFriends();
+    } catch (error) {
+      console.error("Failed to accept friend request:", error);
+    }
+  };
 
-const rejectFriendRequest = async (requestId: string) => {
-  try {
-    await api.post(`/social/user/${user?._id}/reject-friend`, {
-      friendId: requestId,
-    });
-    // Update friend requests list
-    fetchFriendRequests();
-  } catch (error) {
-    console.error("Failed to reject friend request:", error);
-  }
-};
+  const rejectFriendRequest = async (requestId: string) => {
+    try {
+      await api.post(`/social/user/${user?._id}/reject-friend`, {
+        friendId: requestId,
+      });
+      // Update friend requests list
+      fetchFriendRequests();
+    } catch (error) {
+      console.error("Failed to reject friend request:", error);
+    }
+  };
 
-const removeFriend = async (friendId: string) => {
-  try {
-    await api.delete(`/social/user/${user?._id}/friend`, {
-      data: { friendId },
-    });
-    // Update friends list
-    fetchFriends();
-  } catch (error) {
-    console.error("Failed to remove friend:", error);
-  }
+  const removeFriend = async (friendId: string) => {
+    try {
+      await api.delete(`/social/user/${user?._id}/friend`, {
+        data: { friendId },
+      });
+      // Update friends list
+      fetchFriends();
+    } catch (error) {
+      console.error("Failed to remove friend:", error);
+    }
+  };
 
   const handleCancelFriendRequest = async (friendId: string) => {
     try {
@@ -748,4 +748,4 @@ const removeFriend = async (friendId: string) => {
       </div>
     </div>
   );
-};
+}

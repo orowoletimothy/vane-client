@@ -44,10 +44,7 @@ export default function ProfilePage() {
 
     setIsSaving(true)
     try {
-      // In a real app, you'd make an API call here
-      await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulate API call
-
-      updateProfile({ displayName: displayName.trim() })
+      await updateProfile({ displayName: displayName.trim() })
       setIsEditing(false)
     } catch (error) {
       console.error("Failed to update display name:", error)
@@ -97,7 +94,7 @@ export default function ProfilePage() {
     }
   }
 
-  const activeHabits = habits.filter((h) => h.status === "active")
+  const activeHabits = habits.filter((h) => h.status !== "paused")
   const totalStreak = habits.reduce((sum, habit) => sum + habit.streak, 0)
 
   return (
@@ -248,7 +245,7 @@ export default function ProfilePage() {
                 <Label>Member Since</Label>
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <Calendar className="w-4 h-4" />
-                  <span>{new Date(user.date_joined).toLocaleDateString()}</span>
+                  <span>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown"}</span>
                 </div>
               </div>
             </CardContent>
@@ -333,7 +330,7 @@ export default function ProfilePage() {
               <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg">
                 <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-gray-900">
-                  {user?.date_joined ? Math.floor((Date.now() - new Date(user.date_joined).getTime()) / (1000 * 60 * 60 * 24)) : 0}
+                  {user?.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0}
                 </div>
                 <div className="text-sm text-gray-600">Days Since Joining</div>
               </div>

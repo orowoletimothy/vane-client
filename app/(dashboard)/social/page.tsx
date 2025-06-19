@@ -9,10 +9,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Search, UserPlus, Users, UserCheck, UserX } from "lucide-react"
+import { Search, UserPlus, Users, UserCheck, UserX, MessageCircle } from "lucide-react"
 import { inter } from "@/lib/fonts"
 import api from "@/lib/api"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { toast } from "sonner"
 
 interface Friend {
     _id: string
@@ -21,9 +22,19 @@ interface Friend {
     profilePicture: string
     genStreakCount?: number
     longestStreak?: number
+    createdAt?: string
 }
 
 interface FriendRequest {
+    _id: string
+    displayName: string
+    username: string
+    profilePicture: string
+    genStreakCount?: number
+    longestStreak?: number
+}
+
+interface OutgoingRequest {
     _id: string
     displayName: string
     username: string
@@ -36,6 +47,7 @@ export default function SocialPage() {
     const { user } = useAuthStore()
     const [friends, setFriends] = useState<Friend[]>([])
     const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([])
+    const [outgoingRequests, setOutgoingRequests] = useState<OutgoingRequest[]>([])
     const [searchQuery, setSearchQuery] = useState("")
     const [searchResults, setSearchResults] = useState<Friend[]>([])
     const [isSearching, setIsSearching] = useState(false)
@@ -43,11 +55,18 @@ export default function SocialPage() {
     const [dialogOpen, setDialogOpen] = useState(false)
     const [friendRequestLoading, setFriendRequestLoading] = useState(false)
     const [friendRequestSent, setFriendRequestSent] = useState(false)
+    const [friendProfile, setFriendProfile] = useState<any | null>(null)
+    const [friendProfileOpen, setFriendProfileOpen] = useState(false)
+    const [friendHabits, setFriendHabits] = useState<any[]>([])
+    const [friendProfileLoading, setFriendProfileLoading] = useState(false)
+    const [showNoteInput, setShowNoteInput] = useState(false)
+    const [noteText, setNoteText] = useState("")
 
     useEffect(() => {
         if (user) {
             fetchFriends()
             fetchFriendRequests()
+            fetchOutgoingRequests()
         }
     }, [user])
 
@@ -69,13 +88,24 @@ export default function SocialPage() {
         }
     }
 
+    const fetchOutgoingRequests = async () => {
+        try {
+            const response = await api.get(`/social/user/${user?._id}/outgoing-friend-requests`)
+            setOutgoingRequests(response.data)
+        } catch (error) {
+            console.error("Failed to fetch outgoing friend requests:", error)
+        }
+    }
+
     const handleSearch = async () => {
         if (!searchQuery.trim()) return
 
         setIsSearching(true)
         try {
             const response = await api.get(`/social/search?query=${searchQuery}`)
-            setSearchResults(response.data)
+            // Filter out the current user from results
+            const filtered = response.data.filter((u: any) => u._id !== user?._id)
+            setSearchResults(filtered)
         } catch (error) {
             console.error("Search failed:", error)
         } finally {
@@ -94,9 +124,17 @@ export default function SocialPage() {
         try {
             await api.post(`/social/user/${user?._id}/friend-request`, { friendId })
             setFriendRequestSent(true)
-            // Optionally update search results or friend requests
-        } catch (error) {
-            console.error("Failed to send friend request:", error)
+            toast.success("Friend request sent!")
+            // Refresh outgoing and incoming requests, and search results
+            fetchOutgoingRequests()
+            fetchFriendRequests()
+            handleSearch()
+        } catch (error: any) {
+            if (error?.response?.data?.message) {
+                toast.error(error.response.data.message)
+            } else {
+                toast.error("Failed to send friend request")
+            }
         } finally {
             setFriendRequestLoading(false)
         }
@@ -132,6 +170,53 @@ export default function SocialPage() {
             console.error("Failed to remove friend:", error)
         }
     }
+
+    const handleCancelFriendRequest = async (friendId: string) => {
+        try {
+            await api.post(`/social/user/${user?._id}/cancel-friend-request`, { friendId })
+            toast.success("Friend request cancelled")
+            fetchOutgoingRequests()
+            handleSearch()
+        } catch (error) {
+            toast.error("Failed to cancel friend request")
+            console.error("Failed to cancel friend request:", error)
+        }
+    }
+
+    const handleFriendCardClick = async (friend: Friend) => {
+        setFriendProfile(friend)
+        setFriendProfileOpen(true)
+        setFriendProfileLoading(true)
+        try {
+            const { data } = await api.get(`/users/habits/${friend._id}/public`)
+            setFriendHabits(data)
+        } catch (error) {
+            toast.error("Failed to fetch friend's public habits")
+            setFriendHabits([])
+        } finally {
+            setFriendProfileLoading(false)
+        }
+    }
+
+    const handleSendNote = async () => {
+        if (!noteText.trim() || !user) return
+        try {
+            await api.post(`/notifications/${friendProfile._id}/encouragement-note`, {
+                senderId: user!._id,
+                note: noteText.trim()
+            })
+            toast.success("Note sent and notification delivered!")
+            setShowNoteInput(false)
+            setNoteText("")
+        } catch (err) {
+            toast.error("Failed to send note")
+        }
+    }
+
+    // Helper to check friend/request status
+    const isFriend = (id: string) => friends.some(f => f._id === id)
+    const isIncomingRequest = (id: string) => friendRequests.some(r => r._id === id)
+    const isOutgoingRequest = (id: string) => outgoingRequests.some(r => r._id === id)
 
     if (!user) {
         return (
@@ -181,28 +266,44 @@ export default function SocialPage() {
                         {/* User Search Results Widget */}
                         {searchResults.length > 0 && (
                             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {searchResults.map((result) => (
-                                    <div
-                                        key={result._id}
-                                        className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm cursor-pointer hover:bg-amber-50 transition"
-                                        onClick={() => handleUserWidgetClick(result)}
-                                    >
-                                        <div className="flex items-center space-x-3">
-                                            <Avatar>
-                                                <AvatarImage src={result.profilePicture} />
-                                                <AvatarFallback>{result.displayName[0]}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <p className="font-medium">{result.displayName}</p>
-                                                <p className="text-sm text-gray-500">@{result.username}</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <Badge variant="outline">🔥 {result.genStreakCount || 0} streak</Badge>
-                                                    <Badge variant="outline">🏆 {result.longestStreak || 0} best</Badge>
+                                {searchResults.map((result) => {
+                                    const friend = isFriend(result._id)
+                                    const incoming = isIncomingRequest(result._id)
+                                    const outgoing = isOutgoingRequest(result._id)
+                                    return (
+                                        <div
+                                            key={result._id}
+                                            className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm cursor-pointer hover:bg-amber-50 transition"
+                                            onClick={() => handleUserWidgetClick(result)}
+                                        >
+                                            <div className="flex items-center space-x-3">
+                                                <Avatar>
+                                                    <AvatarImage src={result.profilePicture} />
+                                                    <AvatarFallback>{result.displayName[0]}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="font-medium">{result.displayName}</p>
+                                                    <p className="text-sm text-gray-500">@{result.username}</p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <Badge variant="outline">🔥 {result.genStreakCount || 0} streak</Badge>
+                                                        <Badge variant="outline">🏆 {result.longestStreak || 0} best</Badge>
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <div>
+                                                {friend ? (
+                                                    <Badge variant="secondary">Already Friends</Badge>
+                                                ) : incoming ? (
+                                                    <Badge variant="secondary">Requested You</Badge>
+                                                ) : outgoing ? (
+                                                    <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); handleCancelFriendRequest(result._id) }}>Cancel Request</Button>
+                                                ) : (
+                                                    <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white" onClick={e => { e.stopPropagation(); handleSendFriendRequest(result._id) }}>Add Friend</Button>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         )}
 
@@ -229,7 +330,13 @@ export default function SocialPage() {
                                             </div>
                                         </div>
                                         <div className="mt-4">
-                                            {friendRequestSent ? (
+                                            {isFriend(selectedUser._id) ? (
+                                                <Button disabled variant="secondary">Already Friends</Button>
+                                            ) : isIncomingRequest(selectedUser._id) ? (
+                                                <Button disabled variant="secondary">Requested You</Button>
+                                            ) : isOutgoingRequest(selectedUser._id) ? (
+                                                <Button disabled variant="secondary">Request Pending</Button>
+                                            ) : friendRequestSent ? (
                                                 <Button disabled variant="secondary">Friend Request Sent</Button>
                                             ) : (
                                                 <Button
@@ -260,7 +367,7 @@ export default function SocialPage() {
 
                 {/* Friends and Requests Tabs */}
                 <Tabs defaultValue="friends" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="friends" className="flex items-center space-x-2">
                             <Users className="w-4 h-4" />
                             <span>Friends</span>
@@ -276,6 +383,15 @@ export default function SocialPage() {
                             {friendRequests.length > 0 && (
                                 <Badge variant="secondary" className="ml-2">
                                     {friendRequests.length}
+                                </Badge>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="pending" className="flex items-center space-x-2">
+                            <UserPlus className="w-4 h-4" />
+                            <span>Pending Sent</span>
+                            {outgoingRequests.length > 0 && (
+                                <Badge variant="secondary" className="ml-2">
+                                    {outgoingRequests.length}
                                 </Badge>
                             )}
                         </TabsTrigger>
@@ -295,7 +411,8 @@ export default function SocialPage() {
                                         {friends.map((friend) => (
                                             <div
                                                 key={friend._id}
-                                                className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm"
+                                                className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm cursor-pointer hover:bg-amber-50 transition"
+                                                onClick={() => handleFriendCardClick(friend)}
                                             >
                                                 <div className="flex items-center space-x-3">
                                                     <Avatar>
@@ -310,7 +427,7 @@ export default function SocialPage() {
                                                 <Button
                                                     size="sm"
                                                     variant="destructive"
-                                                    onClick={() => removeFriend(friend._id)}
+                                                    onClick={e => { e.stopPropagation(); removeFriend(friend._id) }}
                                                 >
                                                     <UserX className="w-4 h-4 mr-2" />
                                                     Remove
@@ -321,6 +438,70 @@ export default function SocialPage() {
                                 )}
                             </CardContent>
                         </Card>
+                        {/* Friend Profile Dialog */}
+                        <Dialog open={friendProfileOpen} onOpenChange={setFriendProfileOpen}>
+                            <DialogContent>
+                                {friendProfile && (
+                                    <>
+                                        <DialogHeader>
+                                            <DialogTitle className="flex items-center gap-3">
+                                                <Avatar>
+                                                    <AvatarImage src={friendProfile.profilePicture} />
+                                                    <AvatarFallback>{friendProfile.displayName[0]}</AvatarFallback>
+                                                </Avatar>
+                                                <span>{friendProfile.displayName}</span>
+                                                <Button size="icon" variant="ghost" className="ml-auto" onClick={() => setShowNoteInput(v => !v)} title="Send encouragement">
+                                                    <MessageCircle className="w-5 h-5" />
+                                                </Button>
+                                            </DialogTitle>
+                                            <DialogDescription>@{friendProfile.username}</DialogDescription>
+                                        </DialogHeader>
+                                        <div className="mt-2 space-y-2">
+                                            <div className="text-sm text-gray-600">Joined: {friendProfile.createdAt ? new Date(friendProfile.createdAt).toLocaleDateString() : "Unknown"}</div>
+                                            <div className="flex gap-2">
+                                                <Badge variant="outline">🔥 {friendProfile.genStreakCount || 0} streak</Badge>
+                                                <Badge variant="outline">🏆 {friendProfile.longestStreak || 0} best</Badge>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4">
+                                            <h4 className="font-semibold mb-2">Public Habits</h4>
+                                            {friendProfileLoading ? (
+                                                <div>Loading...</div>
+                                            ) : friendHabits.length === 0 ? (
+                                                <div className="text-gray-500">No public habits</div>
+                                            ) : (
+                                                <ul className="space-y-2">
+                                                    {friendHabits.map(habit => (
+                                                        <li key={habit._id} className="p-2 bg-gray-50 rounded flex items-center gap-2">
+                                                            <span className="text-lg">{habit.icon}</span>
+                                                            <span className="font-medium">{habit.title}</span>
+                                                            <span className="ml-auto text-xs text-amber-600">🔥 {habit.streak} day streak</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                        {showNoteInput && (
+                                            <div className="mt-4 flex gap-2 items-center">
+                                                <input
+                                                    className="flex-1 border rounded px-2 py-1"
+                                                    placeholder="Send a note of encouragement..."
+                                                    value={noteText}
+                                                    onChange={e => setNoteText(e.target.value)}
+                                                />
+                                                <Button
+                                                    size="sm"
+                                                    onClick={(user && friendProfile ? handleSendNote : undefined)}
+                                                    disabled={!noteText.trim() || !user}
+                                                >
+                                                    Send
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </DialogContent>
+                        </Dialog>
                     </TabsContent>
 
                     <TabsContent value="requests">
@@ -365,6 +546,47 @@ export default function SocialPage() {
                                                         Reject
                                                     </Button>
                                                 </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="pending">
+                        <Card>
+                            <CardContent className="p-6">
+                                {outgoingRequests.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <UserPlus className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Pending Sent Requests</h3>
+                                        <p className="text-gray-500">Friend requests you send will appear here until accepted or cancelled.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {outgoingRequests.map((request) => (
+                                            <div
+                                                key={request._id}
+                                                className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm"
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    <Avatar>
+                                                        <AvatarImage src={request.profilePicture} />
+                                                        <AvatarFallback>{request.displayName[0]}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <p className="font-medium">{request.displayName}</p>
+                                                        <p className="text-sm text-gray-500">@{request.username}</p>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={() => handleCancelFriendRequest(request._id)}
+                                                >
+                                                    Cancel
+                                                </Button>
                                             </div>
                                         ))}
                                     </div>

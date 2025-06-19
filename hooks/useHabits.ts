@@ -35,6 +35,34 @@ export function useHabits(userId: string) {
     });
 }
 
+// Fetch all habits for a user
+export function useAllHabits(userId: string) {
+    return useQuery({
+        queryKey: ["allHabits", userId],
+        queryFn: async () => {
+            const { data } = await api.get(`/users/habits/${userId}/all`);
+            return data.map((habit: any) => ({
+                id: habit._id,
+                user_id: habit.userId,
+                title: habit.title,
+                reminder_time: habit.reminderTime,
+                status: habit.status,
+                is_public: habit.is_public,
+                target_count: habit.target_count,
+                created_at: habit.createdAt,
+                updated_at: habit.updatedAt,
+                streak: habit.habitStreak,
+                habit_days: habit.repeatDays,
+                last_completed: habit.lastCompleted,
+                notes: habit.notes,
+                icon: habit.icon,
+                completedToday: habit.status === "complete" ? habit.target_count : 0
+            }));
+        },
+        enabled: !!userId,
+    });
+}
+
 // Create a habit
 export function useCreateHabit(userId: string) {
     const queryClient = useQueryClient();

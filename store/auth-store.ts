@@ -14,7 +14,7 @@ interface User {
   friendRequests: string[]
   genStreakCount: number
   userTimeZone?: string
-  date_joined: string
+  createdAt: string
   longest_streak: number
   recovery_points: number
   is_vacation: boolean
@@ -53,10 +53,16 @@ export const useAuthStore = create<AuthState>()(
           set({ user: null, isAuthenticated: false })
         }
       },
-      updateProfile: (updates) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, ...updates } : null,
-        })),
+      updateProfile: async (updates) => {
+        const state = get();
+        if (!state.user) return;
+        try {
+          const { data } = await api.patch(`/auth/user/${state.user._id}`, updates);
+          set({ user: { ...state.user, ...data } });
+        } catch (error) {
+          console.error("Failed to update profile:", error);
+        }
+      },
       toggleVacationMode: () =>
         set((state) => ({
           user: state.user ? { ...state.user, is_vacation: !state.user.is_vacation } : null,

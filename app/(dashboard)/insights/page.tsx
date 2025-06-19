@@ -47,7 +47,7 @@ export default function InsightsPage() {
   }
 
   const analyticsData = useMemo(() => {
-    const activeHabits = habits.filter((h) => h.status === "active")
+    const activeHabits = habits.filter((h) => h.status !== "paused")
     const totalHabits = habits.length
     const pausedHabits = habits.filter((h) => h.status === "paused").length
 
@@ -87,7 +87,7 @@ export default function InsightsPage() {
       averageStreak,
       longestStreak,
       weeklyCompletionRate,
-      currentStreak: user?.current_streak || 0,
+      currentStreak: user?.genStreakCount || 0,
     }
   }, [habits, user])
 

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
+import { toast } from "sonner"
 
 export default function SettingsPage() {
   const { user, updateProfile } = useAuthStore()
@@ -22,16 +23,14 @@ export default function SettingsPage() {
     setSaveSuccess(false)
 
     try {
-      // Update profile in the store
-      updateProfile({
+      await updateProfile({
         displayName,
         is_vacation: isVacationMode
       })
-
-      // TODO: Add API call to update profile on server
-
       setSaveSuccess(true)
+      toast.success("Profile updated successfully!")
     } catch (error) {
+      toast.error("Failed to update profile")
       console.error("Failed to update profile:", error)
     } finally {
       setIsSaving(false)

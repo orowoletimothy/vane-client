@@ -12,40 +12,17 @@ import { useAuthStore } from "@/store/auth-store"
 interface HabitCardProps {
   habit: Habit
   onClick: (habit: Habit) => void
+  showCompleteButton?: boolean
 }
 
-export function HabitCard({ habit, onClick }: HabitCardProps) {
+export function HabitCard({ habit, onClick, showCompleteButton = true }: HabitCardProps) {
   const { user } = useAuthStore()
   const setHabitStatus = useSetHabitStatus(user?._id || "")
 
-  const isCompleted = habit.status === "complete";
+  const isCompleted = habit.completedToday >= habit.target_count;
   const completedToday = typeof habit.completedToday === "number" ? habit.completedToday : 0;
   const targetCount = typeof habit.target_count === "number" && habit.target_count > 0 ? habit.target_count : 1;
   const progress = targetCount > 0 ? Math.min((completedToday / targetCount) * 100, 100) : 0;
-
-  const handleComplete = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (setHabitStatus.isPending) return;
-
-    // Explicitly type newStatus as HabitStatus
-    const newStatus = isCompleted ? "incomplete" as const : "complete" as const;
-    
-    // Update the completedToday count locally before API call
-    const newCompletedToday = newStatus === "complete" ? 
-      Math.min(completedToday + 1, targetCount) : 
-      Math.max(completedToday - 1, 0);
-    
-    // Create a copy of the habit with updated completedToday
-    const updatedHabit: Habit = {
-      ...habit,
-      status: newStatus,
-      completedToday: newCompletedToday
-    };
-    
-    // No longer update UI through onClick to avoid opening the dialog
-    // Instead, just send the update to the server
-    await setHabitStatus.mutateAsync({ habitId: habit.id, status: newStatus });
-  };
 
   return (
     <Card
@@ -55,17 +32,18 @@ export function HabitCard({ habit, onClick }: HabitCardProps) {
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Button
-              onClick={handleComplete}
-              size="sm"
-              disabled={setHabitStatus.isPending}
-              className={`w-10 h-10 rounded-full ${isCompleted
-                ? "bg-green-500 hover:bg-green-600 text-white"
-                : "bg-amber-500 hover:bg-amber-600 text-white"
-                }`}
-            >
-              {isCompleted ? <Check size={16} /> : <Plus size={16} />}
-            </Button>
+            {showCompleteButton && (
+              <Button
+                onClick={e => { e.stopPropagation(); onClick(habit); }}
+                size="sm"
+                className={`w-10 h-10 rounded-full ${isCompleted
+                  ? "bg-green-500 hover:bg-green-600 text-white"
+                  : "bg-amber-500 hover:bg-amber-600 text-white"
+                  }`}
+              >
+                {isCompleted ? <Check size={16} /> : <Plus size={16} />}
+              </Button>
+            )}
 
             <div className="flex-1">
               <div className="flex items-center space-x-2">

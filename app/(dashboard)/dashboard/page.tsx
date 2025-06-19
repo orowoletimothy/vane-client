@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Plus, Search } from "lucide-react"
@@ -15,6 +15,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { inter } from "@/lib/fonts"
 import { useQueryClient } from "@tanstack/react-query"
 import { NotificationBell } from "@/components/notification-bell"
+import { useSetHabitStatus } from "@/hooks/useHabits";
 
 const DAYS_OF_WEEK_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
@@ -24,9 +25,22 @@ export default function DashboardPage() {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null)
   const [activeTab, setActiveTab] = useState("all")
+  const [habitProgress, setHabitProgress] = useState<{ [id: string]: number }>({})
 
   const { user } = useAuthStore();
+  const setHabitStatus = useSetHabitStatus(user?._id || "");
   const { data: todayHabits = [], isLoading, isError } = useHabits(user?._id || "");
+
+  useEffect(() => {
+    // Initialize local progress from backend data
+    if (todayHabits.length > 0) {
+      const progress: { [id: string]: number } = {};
+      todayHabits.forEach((habit: Habit) => {
+        progress[habit.id] = habit.completedToday || 0;
+      });
+      setHabitProgress(progress);
+    }
+  }, [todayHabits]);
 
   const calculateTodayProgress = () => {
     if (todayHabits.length === 0) return 0
@@ -64,6 +78,29 @@ export default function DashboardPage() {
     setShowDetailsDialog(false)
     setShowEditDialog(true)
   }
+
+  const handleHabitProgressClick = (habit: Habit) => {
+    const current = habitProgress[habit.id] || 0;
+    if (current < habit.target_count) {
+      // Increment local progress
+      const newProgress = current + 1;
+      setHabitProgress(prev => ({
+        ...prev,
+        [habit.id]: newProgress
+      }));
+      // If reached target, call backend to mark as complete
+      if (newProgress === habit.target_count) {
+        setHabitStatus.mutateAsync({ habitId: habit.id, status: "complete" });
+      }
+    } else {
+      // Reset to 0 and mark as incomplete
+      setHabitProgress(prev => ({
+        ...prev,
+        [habit.id]: 0
+      }));
+      setHabitStatus.mutateAsync({ habitId: habit.id, status: "incomplete" });
+    }
+  };
 
   // Generate dates for the week display
   const today = new Date()
@@ -266,7 +303,12 @@ export default function DashboardPage() {
             </Card>
           ) : (
             filteredHabits.map((habit: Habit) => (
-              <HabitCard key={habit.id} habit={habit} onClick={() => handleHabitClick(habit)} />
+              <HabitCard
+                key={habit.id}
+                habit={{ ...habit, completedToday: habitProgress[habit.id] || 0 }}
+                onClick={() => handleHabitProgressClick(habit)}
+                showCompleteButton={true}
+              />
             ))
           )}
         </div>

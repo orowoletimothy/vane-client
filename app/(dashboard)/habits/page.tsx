@@ -15,6 +15,7 @@ import { HabitDetailsDialog } from "@/components/habit-details-dialog"
 import { useAllHabits } from "@/hooks/useHabits"
 import { useAuthStore } from "@/store/auth-store"
 import type { Habit } from "@/store/habit-store"
+import { EditHabitDialog } from "@/components/edit-habit-dialog"
 
 const habitCategories = [
   {
@@ -87,6 +88,7 @@ export default function HabitsPage() {
   const [showAddHabit, setShowAddHabit] = useState(false)
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null)
   const [showDetails, setShowDetails] = useState(false)
+  const [showEditHabit, setShowEditHabit] = useState(false)
   const router = useRouter()
   const { user } = useAuthStore()
   const { data: allHabits = [], isLoading } = useAllHabits(user?._id || "")
@@ -159,13 +161,18 @@ export default function HabitsPage() {
       </div>
 
       <AddHabitDialog open={showAddHabit} onOpenChange={setShowAddHabit} />
+      <EditHabitDialog
+        open={showEditHabit}
+        onOpenChange={setShowEditHabit}
+        habit={selectedHabit}
+      />
       <HabitDetailsDialog
         open={showDetails}
         onOpenChange={setShowDetails}
         habit={selectedHabit}
         onEdit={() => {
           setShowDetails(false)
-          setShowAddHabit(true)
+          setShowEditHabit(true)
         }}
       />
     </div>
